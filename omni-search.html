@@ -111,7 +111,7 @@ const PEOPLE=[
  {n:'Saksham A',k:'Saksham A',e:'saksham.a@cashfree.com',c:'#2563eb'},
  {n:'Kumar Anubhav',k:'Kumar Anubhav',e:'kumar.anubhav@cashfree.com',c:'#111827'},
  {n:'Rishabh Ranjan',k:'Rishabh Ranjan',e:'rishabh.ranjan@cashfree.com',c:'#c2410c'}];
-const TYPES={payment:['💳','Transaction'],order:['🧾','Order'],refund:['↩️','Refund'],dispute:['⚠️','Dispute'],settlement:['🏦','Settlement'],report:['📊','Report']};
+const TYPES={payment:['💳','Transaction','Payment ID'],order:['🧾','Order','Order ID'],refund:['↩️','Refund','Refund ID'],dispute:['⚠️','Dispute','Dispute ID'],settlement:['🏦','Settlement','Settlement ID'],report:['📊','Report','Report ID']};
 const ITEMS=[
  {t:'payment',id:'6682947',title:'₹5.12 via UPI',sub:'dummy name · fan_cJEKH0b04L',status:'Success',method:'UPI',person:'dummy name',d:0,time:'Oct 7, 2026 · 6:41 PM'},
  {t:'payment',id:'6682931',title:'₹1,499.00 via Net Banking',sub:'John Doe · fan_8xQ2mT91Zp',status:'Success',method:'Net Banking',person:'John Doe',d:0,time:'Oct 7, 2026 · 5:02 PM'},
@@ -155,7 +155,7 @@ function renderChips(){
         chip('refund','Refunds',f.refund)+chip('range','Date Range',rng&&rng[0]);
   if(S.menu){
     let opts='';
-    if(S.menu==='type')opts=Object.entries(TYPES).map(([k,v])=>`<div class="opt" data-set="type" data-v="${k}">${v[0]} ${v[1]}</div>`).join('');
+    if(S.menu==='type')opts=Object.entries(TYPES).map(([k,v])=>`<div class="opt" data-set="type" data-v="${k}">${v[0]} ${v[1]} — ${v[2]}</div>`).join('');
     if(S.menu==='order')opts=['Order ID','Mobile Number','Customer Name'].map(s=>`<div class="opt" data-set="order" data-v="${s}">🧾 ${s}</div>`).join('');
     if(S.menu==='refund')opts=['Refund ID','Order ID','Refund ARN'].map(s=>`<div class="opt" data-set="refund" data-v="${s}">↩️ ${s}</div>`).join('');
     if(S.menu==='range')opts=RANGES.map(r=>`<div class="opt" data-set="range" data-v="${r[1]}">${r[0]}</div>`).join('');
