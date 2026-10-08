@@ -72,6 +72,15 @@
   .result-meta small{font-size:12px}
   .result-time{margin-left:auto;color:var(--mute);font-size:12px;white-space:nowrap}
   .result-count{margin-top:12px;font-size:12px}
+  .typeahead{display:block;border-top:1px solid var(--line);padding:8px 12px 12px;max-height:340px;overflow-y:auto;background:white;border-radius:0 0 20px 20px}
+  .typeahead:empty{display:none}
+  .typeahead-heading{padding:8px 10px;color:var(--mute);font-size:12px;font-weight:600;display:flex;justify-content:space-between}
+  .suggestion{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid transparent;background:#fff;border-radius:10px;padding:10px;cursor:pointer;color:var(--ink);font:inherit}
+  .suggestion:hover,.suggestion.active{background:#eef2f9;border-color:#e2e8f0}
+  .suggestion .ico{width:36px;height:36px}
+  .suggestion small{display:block;color:var(--mute);margin-top:3px}
+  .suggestion .pill{margin-left:auto}
+  .typeahead-footer{padding:10px;text-align:center;color:var(--blue);font-size:12px;cursor:pointer;border-top:1px solid var(--line)}
   .results-head{display:flex;justify-content:space-between;align-items:center;margin:20px 0 16px}
   .results-head h1{font-size:24px;margin-bottom:4px}
   .results-head-actions{display:flex;gap:8px}
@@ -102,6 +111,7 @@
 <div id="ov"><div id="pal">
   <div class="bar">🔍<input id="q" placeholder="Search payments, orders, customers…" autocomplete="off"><button class="search-btn" id="searchBtn">Search</button></div>
   <div class="chips" id="chips"></div>
+  <div id="typeahead" class="typeahead" aria-live="polite"></div>
 </div></div>
 
 <script>
@@ -171,7 +181,22 @@ function renderChips(){
   $('#chips').innerHTML=h;
   if(S.menu==='person'){const m=$('#mq');m.focus();m.setSelectionRange(99,99)}
 }
-function renderRes(){}
+function renderRes(){
+  const target=$('#typeahead');
+  const query=S.q.trim();
+  if(!query && !hasF()){target.innerHTML='<div class="typeahead-heading">Try searching: 6682947, UPI, John Doe, RF-20931</div>';return}
+  const matches=parse().list.slice(0,5);
+  if(!matches.length){target.innerHTML='<div class="empty" style="padding:24px">No matching results. Try another ID or keyword.</div>';return}
+  S.i=Math.min(S.i,matches.length-1);
+  target.innerHTML='<div class="typeahead-heading"><span>Suggested results</span><span>'+parse().list.length+' matches</span></div>'+
+    matches.map((x,i)=>'<button type="button" class="suggestion '+(i===S.i?'active':'')+'" data-suggestion="'+i+'"><span class="ico">'+TYPES[x.t][0]+'</span><span class="grow"><strong>'+hl(x.title,parse().free)+'</strong><small>'+TYPES[x.t][2]+': '+hl(x.id,parse().free)+' · '+x.sub+'</small></span><span class="pill '+x.status.replace(' ','')+'">'+x.status+'</span></button>').join('')+
+    '<div class="typeahead-footer" id="viewAll">View all '+parse().list.length+' results →</div>';
+}
+$('#typeahead').onclick=e=>{
+  const item=e.target.closest('[data-suggestion]');
+  if(item){const x=parse().list[Number(item.dataset.suggestion)];if(x){qi.value=x.id;S.q=x.id;$('#searchBtn').click()}return}
+  if(e.target.closest('#viewAll'))$('#searchBtn').click();
+};
 const renderAll=()=>{renderChips();renderRes()};
 function open(v){ov.classList.toggle('open',v);if(v){qi.focus();renderAll()}}
 
@@ -183,9 +208,9 @@ addEventListener('keydown',e=>{
   if(!ov.classList.contains('open'))return;
   const n=parse().list.length;
   if(e.key==='Escape')S.menu?(S.menu=null,renderChips()):open(false);
-  if(e.key==='ArrowDown'){e.preventDefault();S.i=(S.i+1)%n;renderRes()}
-  if(e.key==='ArrowUp'){e.preventDefault();S.i=(S.i-1+n)%n;renderRes()}
-  if(e.key==='Enter'){e.preventDefault();if(e.target===qi){$('#searchBtn').click();return}if(n){const x=parse().list[S.i];alert('Opening '+x.title)}}
+  if(e.key==='ArrowDown'&&n){e.preventDefault();S.i=(S.i+1)%Math.min(n,5);renderRes()}
+  if(e.key==='ArrowUp'&&n){e.preventDefault();S.i=(S.i-1+Math.min(n,5))%Math.min(n,5);renderRes()}
+  if(e.key==='Enter'){e.preventDefault();if(e.target===qi){if(S.i>0&&n){const x=parse().list[S.i];qi.value=x.id;S.q=x.id}$('#searchBtn').click();return}if(n){const x=parse().list[S.i];alert('Opening '+x.title)}}
   if(e.key==='Backspace'&&!qi.value&&e.target===qi){
     const k=Object.keys(S.f).reverse().find(k=>S.f[k]!==''&&S.f[k]!==null);
     if(k){S.f[k]=k==='range'?null:'';renderAll()}
