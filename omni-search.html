@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Omni Search Demo</title>
+<style>
+  :root{--ink:#0f172a;--mute:#64748b;--line:#e5e7eb;--bg:#f6f7f9;--blue:#1a73e8;--green:#12a150;--red:#d92d20;--amber:#b7791f}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.4 Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg);display:flex;height:100vh}
+  aside{width:220px;background:#0b0b0f;color:#a1a1aa;padding:18px 12px;flex:none}
+  aside b{color:#fff;font-size:18px;display:block;margin:0 8px 20px}
+  aside div{padding:8px 10px;border-radius:8px}
+  aside .on{background:#1f1f27;color:#fff}
+  aside .sub{padding-left:26px;font-size:13px}
+  main{flex:1;padding:24px 32px;overflow:auto}
+  h1{margin:0;font-size:22px} .muted{color:var(--mute)}
+  .top{display:flex;gap:16px;align-items:center;margin:16px 0 20px}
+  .trigger{flex:1;max-width:560px;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:10px 16px;color:var(--mute);cursor:pointer}
+  .trigger:hover{box-shadow:0 1px 6px rgba(0,0,0,.12)}
+  kbd{margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font:12px inherit}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;cursor:pointer;transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+  .btn:hover{background:#f8fafc;border-color:#cbd5e1;box-shadow:0 2px 8px rgba(15,23,42,.08);transform:translateY(-1px)}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+  .card h2{margin:6px 0 4px;font-size:22px}
+  .up{color:var(--green)} .down{color:var(--red)}
+  /* overlay */
+  #ov{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;justify-content:center;padding-top:9vh}
+  #ov.open{display:flex}
+  #pal{width:820px;max-width:94vw;height:fit-content;max-height:80vh;background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;overflow:visible}
+  .bar{display:flex;align-items:center;gap:12px;margin:14px;padding:0 18px;background:#eef2f9;border-radius:999px;height:52px}
+  .bar input{flex:1;border:0;background:none;outline:none;font-size:16px}
+  .search-btn{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 16px;font-weight:600;cursor:pointer}
+  .search-btn:hover{opacity:.92}
+  .chips{display:flex;gap:8px;padding:0 16px 12px;position:relative;flex-wrap:wrap}
+  .chip{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;display:flex;gap:6px;align-items:center}
+  .chip.set{background:#e8f0fe;border-color:#e8f0fe;color:#174ea6}
+  .chip:hover{background:#f1f5f9}.chip.set:hover{background:#dbe7fd}
+  .menu{position:absolute;top:100%;margin-top:-4px;z-index:5;background:#fff;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.2);width:340px;padding:8px 0;max-height:300px;overflow:auto}
+  .menu input{margin:4px 12px 8px;width:calc(100% - 24px);padding:8px 10px;border:1px solid var(--line);border-radius:8px;outline:none}
+  .opt{display:flex;align-items:center;gap:12px;padding:8px 16px;cursor:pointer}
+  .opt:hover{background:#f1f5f9}
+  .av{width:32px;height:32px;border-radius:50%;color:#fff;display:grid;place-items:center;font-weight:600;flex:none}
+  .body{display:flex;border-top:1px solid var(--line);min-height:260px;overflow:hidden}
+  .res{flex:1;overflow:auto;padding:8px}
+  .row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer}
+  .row.act{background:#eef2f9}
+  .ico{width:34px;height:34px;border-radius:9px;background:#f1f5f9;display:grid;place-items:center;flex:none}
+  .grow{flex:1;min-width:0}
+  .grow div:first-child{font-weight:500}
+  .grow small{color:var(--mute)}
+  mark{background:#fde68a;border-radius:3px}
+  .pill{font-size:12px;border-radius:999px;padding:2px 10px;background:#f1f5f9}
+  .Success{background:#dcfce7;color:#116b3a}.Failed{background:#fee4e2;color:#b42318}.Pending{background:#fef3c7;color:var(--amber)}
+  .grp{font-size:12px;color:var(--mute);margin:10px 12px 4px;font-weight:600;text-transform:uppercase}
+  .foot{border-top:1px solid var(--line);padding:10px 18px;display:flex;gap:18px;color:var(--mute);font-size:12px;background:#fafbfc}
+  .foot b{color:var(--ink);font-weight:500}.foot span:last-child{margin-left:auto}
+  .empty{padding:50px;text-align:center;color:var(--mute)}
+  .result-card{padding:0;background:transparent;border:0;box-shadow:none;overflow:visible}
+  .result-category{background:#fff;border:1px solid var(--line);border-radius:16px;padding:8px 12px 12px;margin-bottom:14px;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+  .result-category:last-child{margin-bottom:0}
+  .result-group{margin:0;padding:12px 8px 10px;font-size:11px;letter-spacing:.06em;color:#334155;display:flex;align-items:center;gap:8px;font-weight:700}
+  .result-group:after{content:'';height:1px;background:#e2e8f0;flex:1}
+  .result-group .category-count{font-size:11px;letter-spacing:0;color:#64748b;background:#f1f5f9;border-radius:999px;padding:2px 7px;font-weight:600}
+  .result-item{display:flex;gap:14px;align-items:center;margin-top:4px;padding:14px 10px;border:1px solid transparent;border-radius:12px;cursor:pointer;transition:background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease}
+  .result-item:hover{background:#f8fafc;border-color:#e2e8f0;transform:translateY(-1px);box-shadow:0 4px 14px rgba(15,23,42,.06)}
+  .result-item:last-child{border-bottom:0}
+  .result-item .ico{width:40px;height:40px;border-radius:11px;background:#f1f5f9;font-size:17px;transition:transform .18s ease,background .18s ease}
+  .result-item:hover .ico{transform:scale(1.06);background:#e8eef7}
+  .result-title{font-weight:600;margin-bottom:4px;line-height:1.35}
+  .result-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .result-meta small{font-size:12px}
+  .result-time{margin-left:auto;color:var(--mute);font-size:12px;white-space:nowrap}
+  .result-count{margin-top:12px;font-size:12px}
+  .results-head{display:flex;justify-content:space-between;align-items:center;margin:20px 0 16px}
+  .results-head h1{font-size:24px;margin-bottom:4px}
+  .results-head-actions{display:flex;gap:8px}
+  @media(max-width:700px){.result-time{display:none}.results-head{align-items:flex-start;gap:12px}.results-head-actions{flex-direction:column}}
+</style>
+</head>
+<body>
+<aside>
+  <b>cashfree</b>
+  <div>Home</div><div>Insights</div><div class="on">Transactions</div>
+  <div class="sub">Payments</div><div class="sub">Orders</div>
+  <div>Refunds</div><div>Disputes</div><div>Settlements</div><div>Reports</div>
+</aside>
+<main>
+  <h1>Payments</h1>
+  <div class="muted">You can check and manage all your transactions from here.</div>
+  <div class="top">
+    <div class="trigger" id="open">🔍 Search payments, orders, customers… <kbd>⌘K</kbd></div>
+    <button class="btn">Last 10 days ▾</button><button class="btn">Export</button>
+  </div>
+  <div class="cards">
+    <div class="card"><span class="muted">Gross Sales</span><h2>₹723,09,34,110.18</h2><span class="up">▲ 0.05% in 15 days</span></div>
+    <div class="card"><span class="muted">Total Transactions</span><h2>5,15,334</h2><span class="down">▼ 0.13% in 15 days</span></div>
+    <div class="card"><span class="muted">Av. Order Value</span><h2>₹16,001.79</h2><span class="up">▲ 0.2% in 15 days</span></div>
+  </div>
+</main>
+
+<div id="ov"><div id="pal">
+  <div class="bar">🔍<input id="q" placeholder="Search payments, orders, customers…" autocomplete="off"><button class="search-btn" id="searchBtn">Search</button></div>
+  <div class="chips" id="chips"></div>
+</div></div>
+
+<script>
+const PEOPLE=[
+ {n:'Akhilesh S (me)',k:'Akhilesh S',e:'akhilesh.s@cashfree.com',c:'#7c3aed'},
+ {n:'Subramanian K',k:'Subramanian K',e:'subramanian.k@cashfree.com',c:'#0d9488'},
+ {n:'Saksham A',k:'Saksham A',e:'saksham.a@cashfree.com',c:'#2563eb'},
+ {n:'Kumar Anubhav',k:'Kumar Anubhav',e:'kumar.anubhav@cashfree.com',c:'#111827'},
+ {n:'Rishabh Ranjan',k:'Rishabh Ranjan',e:'rishabh.ranjan@cashfree.com',c:'#c2410c'}];
+const TYPES={payment:['💳','Transaction'],order:['🧾','Order'],refund:['↩️','Refund'],dispute:['⚠️','Dispute'],settlement:['🏦','Settlement'],report:['📊','Report']};
+const ITEMS=[
+ {t:'payment',id:'6682947',title:'₹5.12 via UPI',sub:'dummy name · fan_cJEKH0b04L',status:'Success',method:'UPI',person:'dummy name',d:0,time:'Oct 7, 2026 · 6:41 PM'},
+ {t:'payment',id:'6682931',title:'₹1,499.00 via Net Banking',sub:'John Doe · fan_8xQ2mT91Zp',status:'Success',method:'Net Banking',person:'John Doe',d:0,time:'Oct 7, 2026 · 5:02 PM'},
+ {t:'payment',id:'6682810',title:'₹16,001.79 via Debit Card',sub:'N/A · fan_Lk39sD72aV',status:'User Dropped',method:'Debit Card',person:'N/A',d:2,time:'Oct 5, 2026 · 11:20 AM'},
+ {t:'payment',id:'6682654',title:'₹320.00 via Wallet',sub:'John Doe · fan_Qw71nB55cR',status:'Success',method:'Wallet',person:'John Doe',d:4,time:'Oct 3, 2026 · 9:15 AM'},
+ {t:'payment',id:'6682590',title:'₹2,250.00 via UPI',sub:'dummy name · fan_Zt04pE18yH',status:'Failed',method:'UPI',person:'dummy name',d:5,time:'Oct 2, 2026 · 8:47 PM'},
+ {t:'order',id:'fan_cJEKH0b04L',title:'Order fan_cJEKH0b04L',sub:'1 item · ₹5.12',status:'Success',method:'UPI',person:'dummy name',d:0,time:'Oct 7, 2026 · 6:41 PM'},
+ {t:'order',id:'fan_8xQ2mT91Zp',title:'Order fan_8xQ2mT91Zp',sub:'3 items · ₹1,499.00',status:'Pending',method:'Net Banking',person:'John Doe',d:0,time:'Oct 7, 2026 · 5:02 PM'},
+ {t:'refund',id:'RF-20931',title:'Refund RF-20931 · ₹320.00',sub:'Initiated by Saksham A',status:'Pending',method:'Wallet',person:'Saksham A',d:1,time:'Oct 6, 2026 · 3:30 PM'},
+ {t:'dispute',id:'DP-4471',title:'Chargeback DP-4471',sub:'Assigned to Subramanian K',status:'Pending',method:'Debit Card',person:'Subramanian K',d:3,time:'Oct 4, 2026 · 1:12 PM'},
+ {t:'settlement',id:'ST-99120',title:'Settlement ST-99120 · ₹4,12,880.00',sub:'Approved by Kumar Anubhav',status:'Success',method:'Bank Transfer',person:'Kumar Anubhav',d:1,time:'Oct 6, 2026 · 10:00 AM'},
+ {t:'report',id:'RP-221',title:'Weekly reconciliation report',sub:'Owned by Rishabh Ranjan',status:'Success',method:'CSV',person:'Rishabh Ranjan',d:7,time:'Sep 30, 2026 · 9:00 AM'},
+ {t:'report',id:'RP-230',title:'Payment method mix, last 10 days',sub:'Owned by Akhilesh S',status:'Success',method:'PDF',person:'Akhilesh S',d:1,time:'Oct 6, 2026 · 7:45 PM'}];
+const STATUS=['Success','Failed','Pending','User Dropped'], RANGES=[['Today',0],['Last 7 days',7],['Last 30 days',30]];
+let S={q:'',f:{type:'',order:'',refund:'',method:'',range:null},i:0,menu:null,mq:'',searched:false};
+const $=s=>document.querySelector(s), ov=$('#ov'), qi=$('#q');
+const hasF=()=>Object.values(S.f).some(v=>v!==''&&v!==null);
+
+function parse(){
+  const f={...S.f},free=[];
+  S.q.split(/\s+/).filter(Boolean).forEach(t=>{
+    const m=t.match(/^(type|order|refund|method):(.+)$/i);
+    m?f[m[1].toLowerCase()]=m[2].toLowerCase():free.push(t.toLowerCase());
+  });
+  const L=v=>(v||'').toLowerCase();
+  const list=ITEMS.filter(x=>
+    (!f.type||x.t.startsWith(L(f.type)))&&(!f.status||L(x.status).includes(L(f.status)))&&
+        (!f.method||L(x.method).includes(L(f.method)))&&
+    (f.range===null||x.d<=f.range)&&
+    free.every(w=>L([x.id,x.title,x.sub,x.person,x.method,x.status,x.t].join(' ')).includes(w)));
+  return {list,free};
+}
+const hl=(s,free)=>free.length?s.replace(new RegExp('('+free.map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')','gi'),'<mark>$1</mark>'):s;
+
+function chip(key,label,val){
+  return `<div class="chip ${val?'set':''}" data-chip="${key}">${val||label} ${val?'<span data-clear="'+key+'">✕</span>':'▾'}</div>`;
+}
+function renderChips(){
+  const f=S.f, rng=RANGES.find(r=>r[1]===f.range);
+  let h=chip('type','Transaction',f.type&&TYPES[f.type][1])+chip('order','Orders',f.order)+
+        chip('refund','Refunds',f.refund)+chip('range','Date Range',rng&&rng[0]);
+  if(S.menu){
+    let opts='';
+    if(S.menu==='type')opts=Object.entries(TYPES).map(([k,v])=>`<div class="opt" data-set="type" data-v="${k}">${v[0]} ${v[1]}</div>`).join('');
+    if(S.menu==='order')opts=['Order ID','Mobile Number','Customer Name'].map(s=>`<div class="opt" data-set="order" data-v="${s}">🧾 ${s}</div>`).join('');
+    if(S.menu==='refund')opts=['Refund ID','Order ID','Refund ARN'].map(s=>`<div class="opt" data-set="refund" data-v="${s}">↩️ ${s}</div>`).join('');
+    if(S.menu==='range')opts=RANGES.map(r=>`<div class="opt" data-set="range" data-v="${r[1]}">${r[0]}</div>`).join('');
+    if(S.menu==='person'){
+      const m=S.mq.toLowerCase();
+      opts=`<input id="mq" placeholder="Search for people and groups" value="${S.mq}">`+
+        PEOPLE.filter(p=>(p.n+p.e).toLowerCase().includes(m)).map(p=>
+         `<div class="opt" data-set="person" data-v="${p.k}"><div class="av" style="background:${p.c}">${p.k[0]}</div>
+          <div class="grow"><div>${p.n}</div><small class="muted">${p.e}</small></div>›</div>`).join('');
+    }
+    h+=`<div class="menu" style="left:${{type:16,order:100,refund:190,range:280}[S.menu]}px">${opts}</div>`;
+  }
+  $('#chips').innerHTML=h;
+  if(S.menu==='person'){const m=$('#mq');m.focus();m.setSelectionRange(99,99)}
+}
+function renderRes(){}
+const renderAll=()=>{renderChips();renderRes()};
+function open(v){ov.classList.toggle('open',v);if(v){qi.focus();renderAll()}}
+
+$('#open').onclick=()=>open(true);
+$('#searchBtn').onclick=()=>{S.q=qi.value;S.searched=true;S.i=0;const list=parse().list;open(false);const groups={};list.forEach(x=>(groups[x.t]??=[]).push(x));const order=['payment','order','refund','dispute','settlement','report'];let body='';order.forEach(t=>{if(!groups[t])return;body+='<div class="result-category"><div class="grp result-group">'+TYPES[t][0]+' '+TYPES[t][1]+'s <span class="category-count">'+groups[t].length+'</span></div>'+groups[t].map(x=>'<div class="result-item"><div class="ico">'+TYPES[x.t][0]+'</div><div class="grow"><div class="result-title">'+x.title+'</div><div class="result-meta"><small class="muted">'+x.sub+'</small><span class="pill '+x.status.replace(' ','')+'">'+x.status+'</span></div></div><span class="result-time">'+x.time+'</span></div>').join('')+'</div>'});$('main').innerHTML='<button class="btn" id="backBtn">← Back to Payments</button><div class="results-head"><div><h1>Search Results</h1><div class="muted">'+(S.q?'Results for "'+S.q+'"':'All results')+'</div></div><div class="results-head-actions"><button class="btn" id="newSearch">New Search</button></div></div><div class="card result-card">'+(body||'<div class="empty">No matches found.</div>')+'</div><div class="muted result-count">'+list.length+' result'+(list.length===1?'':'s')+'</div>';$('#backBtn').onclick=()=>{$('main').innerHTML='<h1>Payments</h1><div class="muted">You can check and manage all your transactions from here.</div><div class="top"><div class="trigger" id="open">🔍 Search payments, orders, customers… <kbd>⌘K</kbd></div><button class="btn">Last 10 days ▾</button><button class="btn">Export</button></div><div class="cards"><div class="card"><span class="muted">Gross Sales</span><h2>₹723,09,34,110.18</h2><span class="up">▲ 0.05% in 15 days</span></div><div class="card"><span class="muted">Total Transactions</span><h2>5,15,334</h2><span class="down">▼ 0.13% in 15 days</span></div><div class="card"><span class="muted">Av. Order Value</span><h2>₹16,001.79</h2><span class="up">▲ 0.2% in 15 days</span></div></div>';$('#open').onclick=()=>open(true);};$('#newSearch').onclick=()=>{S.searched=false;open(true)}};
+ov.onclick=e=>{if(e.target===ov)open(false)};
+addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();open(!ov.classList.contains('open'))}
+  if(!ov.classList.contains('open'))return;
+  const n=parse().list.length;
+  if(e.key==='Escape')S.menu?(S.menu=null,renderChips()):open(false);
+  if(e.key==='ArrowDown'){e.preventDefault();S.i=(S.i+1)%n;renderRes()}
+  if(e.key==='ArrowUp'){e.preventDefault();S.i=(S.i-1+n)%n;renderRes()}
+  if(e.key==='Enter'){e.preventDefault();if(e.target===qi){$('#searchBtn').click();return}if(n){const x=parse().list[S.i];alert('Opening '+x.title)}}
+  if(e.key==='Backspace'&&!qi.value&&e.target===qi){
+    const k=Object.keys(S.f).reverse().find(k=>S.f[k]!==''&&S.f[k]!==null);
+    if(k){S.f[k]=k==='range'?null:'';renderAll()}
+  }
+});
+qi.oninput=()=>{S.q=qi.value;S.searched=false;S.i=0;renderRes()};
+$('#chips').onclick=e=>{
+  const c=e.target.closest('[data-clear]');
+  if(c){const k=c.dataset.clear;S.f[k]=k==='range'?null:'';S.menu=null;renderAll();return}
+  const o=e.target.closest('[data-set]');
+  if(o){const k=o.dataset.set,v=o.dataset.v;S.f[k]=k==='range'?+v:v;S.menu=null;S.mq='';renderAll();qi.focus();return}
+  const ch=e.target.closest('[data-chip]');
+  if(ch){S.menu=S.menu===ch.dataset.chip?null:ch.dataset.chip;S.mq='';renderChips()}
+};
+$('#chips').oninput=e=>{if(e.target.id==='mq'){S.mq=e.target.value;renderChips()}};
+</script>
+</body>
+</html>
